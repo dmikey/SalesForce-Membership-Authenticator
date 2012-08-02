@@ -1,0 +1,93 @@
+public class Member_Provider_Default implements Member_Provider {
+        
+        public Member__c doAuth(String username, String password){
+            Member__c m = new Member__c();
+            List<Member__c> returnval = [Select M.id, M.Profile_Pic__c, M.Full_Name__c, M.Short_Name__c, M.Name, M.Password__c from Member__c M where M.Name = :username];
+              if(returnval.size() > 0){
+                  m = returnval[0];
+                  if(m.Password__c == password){
+                      DateTime d = System.now();
+                          String timestamp = ''+ d.year() + '-' +
+                          d.month() + '-' +
+                          d.day() + '\'T\'' +
+                          d.hour() + ':' +
+                          d.minute() + ':' +
+                          d.second() + '.' +
+                          d.millisecond() + '\'Z\'';
+                      
+                       // Use generateAesKey to generate the private key 
+                            
+                        Blob cryptoKey = Crypto.generateAesKey(256);
+                        
+                        // Generate the data to be encrypted. 
+                            
+                        Blob data = Blob.valueOf(timestamp);
+                        
+                        // Encrypt the data and have Salesforce.com generate the initialization vector  
+                            
+                        Blob encryptedData = Crypto.encryptWithManagedIV('AES256', cryptoKey, data);
+                        String cdata = EncodingUtil.base64Encode(encryptedData);
+              
+                        m.Token__c = cdata;
+                        m.Token_Stamp__c = d;
+                        
+                        UPDATE m;
+                          
+              
+                        Cookie counter = ApexPages.currentPage().getCookies().get('Auth');
+                        counter = new Cookie('Auth', cdata,null,-1,false);
+                        Cookie u = new Cookie('U', username,null,-1,false);          
+                       
+                        
+                        ApexPages.currentPage().setCookies(new Cookie[]{counter});
+                        
+                        ApexPages.currentPage().setCookies(new Cookie[]{u});
+                   
+          }
+          
+          }
+            return m;
+        
+        }
+        
+        public Member__c doDestroy(){
+                b3Auth test = new b3Auth();
+                Member__c m = new Member__c();
+                Cookie counter = ApexPages.currentPage().getCookies().get('Auth');
+                Cookie u = ApexPages.currentPage().getCookies().get('U');
+                String lusername = u.getValue();
+                if(test.verify(u.getValue(), counter.getValue())){
+                    List<Member__c> returnval = [Select M.id, M.Profile_Pic__c, M.Short_Name__c,M.Full_Name__c, M.Name, M.Password__c from Member__c M where M.Name = :lusername];
+                    if(returnval.size() > 0){
+                        m = returnval[0];
+                        m.Token__c = '';
+                        UPDATE m;
+                        m = new Member__c();
+                        return  m;
+                    }
+                }
+                m.Name = '';
+                return  m;
+
+        }
+        
+        public Member__c isAuth(){
+                    b3Auth test = new b3Auth();
+                    Cookie counter = ApexPages.currentPage().getCookies().get('Auth');
+                    Cookie u = ApexPages.currentPage().getCookies().get('U');
+                    Member__c m = new Member__c();
+                    if (counter != null) {
+                        if (u != null) {
+                            if(test.verify(u.getValue(), counter.getValue())){
+                                    List<Member__c> returnval = [Select M.id, M.Profile_Pic__c, M.Short_Name__c,M.Full_Name__c, M.Name, M.Password__c from Member__c M where M.Name = :u.getValue()];
+                                    if(returnval.size() > 0){
+                                       m = returnval[0];
+                                    }
+                                return m;
+                            }
+                        }
+                    }
+                    m.Name = '';
+                    return m;
+        }
+}

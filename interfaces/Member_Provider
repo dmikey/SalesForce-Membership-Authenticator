@@ -1,0 +1,5 @@
+public interface Member_Provider {
+        Member__c doAuth(String username, String password);
+        Member__c doDestroy();
+        Member__c isAuth();
+ }

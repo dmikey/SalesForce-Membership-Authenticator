@@ -1,0 +1,80 @@
+public class Member_Controller{
+  //set to the public username for the Application (Site)
+  private static String publicUsername = 'testapp@toxictester-developer-edition.na12.force.com';
+
+  //the page will set these before trying to authenticate
+  public String username { get; set; }
+  public String password { get; set; }
+  
+  //these will allow you to assign gui elements based on logic
+  public Boolean isLoggedOn{ get; set; }
+  public Boolean isNativeUser{ get; set; }
+  public Boolean authShow{ get; set; }
+   
+  //pages can touch member information, and set the provider
+  public Member__c m{ get; set; }
+  public Member_Provider provider{ get; set; }
+  
+  public Member_Controller(){
+  //just some default values
+         isLoggedOn = false;
+         authShow = true;
+         provider = new Member_Provider_Default();
+  }
+    
+  public Boolean isAuth(){
+  //check native salesforce login, and determine if user is coming from public facing site,
+  //then use the preferred Membership provider.
+        username = UserInfo.getUserName();
+        if(username == publicUsername){
+            username = '';
+            m = provider.isAuth();
+        }
+        else{
+            //pretty dirty right now, but this gets a member object to the app from the native salesforce interface.
+            User activeUser = [Select Email, Name From User where Username = : userName limit 1];
+            m = new Member__c();
+            m.name = username;
+            m.full_name__c = activeUser.Name;
+            m.Profile_Pic__c = 'profile pic';
+            isLoggedOn = true;
+            isNativeUser = true;
+            authShow = false;
+        }
+       return checkMember();
+  }
+    
+  public void LogOut(){
+        username = UserInfo.getUserName();
+        if(username == publicUsername){
+           //tell the provider to destroy the token, and remove any service authentication it needs
+           m = provider.doDestroy();
+           username='';
+           m.Name= '';
+           checkMember();
+         }
+  }
+  
+  
+  public PageReference Authenticate(){
+  //authenticate with the provider, by supplying username and password
+       m = provider.doAuth(username, password);
+       checkMember();
+       //no matter what just return to this page, whatever page you are logging from (works for either SalesForce Native Login, or Public Member Auth).
+       PageReference ref = new PageReference(ApexPages.currentPage().getUrl()); 
+       ref.setRedirect(false);
+       return ref;
+   }
+   
+   private boolean checkMember(){
+         string Name = m.Name;
+         if(Name.length() < 1){
+               isLoggedOn = false;
+               authShow = true;
+               return false;
+           }
+          isLoggedOn = true;
+          authShow = false;
+          return true;
+   }
+}

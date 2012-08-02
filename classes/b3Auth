@@ -1,0 +1,15 @@
+global class b3Auth{
+    global Boolean verify(String username,String token){
+    List<Member__c> returnval = [Select M.Name, M.Token__c from Member__c M where M.Name = :username];
+      if(returnval.size() > 0){
+          Member__c m;
+          m = returnval [0];
+          System.debug(token);
+          if(m.Token__c == token){
+              return true;
+          }
+          return false;
+      }
+      return false;
+    }
+}
