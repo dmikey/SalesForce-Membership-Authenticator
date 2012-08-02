@@ -1,13 +1,14 @@
 SalesForce-Membership-Authenticator
 ===================================
 
-This is some open apex code to help setup a custom authentication provider for SalesForce - Visual Force pages.
+This is some open apex code to help setup a custom authentication provider for SalesForce - Visual Force pages. This uses a simple cookie authentication scheme, so it is not exactly robust, but could be made more secure. It currently relies on a generated token that can only exist in one client location at a time, controlling multiple logins.
 
 b3Auth is a generic authentication membership verification class. You can make modifications here, to your membership verification needs.
 
 General setup is as follows, inside the Custom Controller for the Visual Force View, upon instantiation you will call the authentication method.
 
-public Ticket_Controller()
+//a test controller for a page
+public Test_Controller()
     {
        //here is where we roll our authentication
        mc = new Member_Controller();
